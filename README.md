@@ -1,7 +1,7 @@
 
 # OBSFuckOFFSafeMode
 
-Yeah I could run it OBS with the --disable-shutdown-check startup parameter but it never shuts down cleanly. So I just made a small program that deletes the safemode file before launch. Launches the program, watches to see if it's running and then clears the safemode file again if OBS didn't clean exit
+Yeah I could run it OBS with the --disable-shutdown-check startup parameter but it never shuts down cleanly. So I just made a small program that deletes the safemode file before launch. Launches the program, watches to see if it's running and then clears the safemode file again if OBS didn't clean exit. Also has a force close button because I'm sick of opening taskmanager when it hangs.
 
 
 
