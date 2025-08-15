@@ -7,18 +7,21 @@ Yeah I could run it OBS with the --disable-shutdown-check startup parameter but 
 
 ## Getting Started
 
-You'll need pyinstaller or something similar to compile.
-Download the .py file.
-Grab an icon file if you like for the program,
-and run 
+You’ll need Nuitka to compile the program.
 
-"pyinstaller obsfuckoffsafemode.py --noconsole --onefile --icon=your_icon.ico"
+Download the .py file.
+
+Grab an icon file if you like for the program.
+
+Run the following command to build a standalone Windows executable:
+nuitka obsfuckoffsafemode.py --standalone --enable-plugin=tk-inter --windows-console-mode=disable --windows-icon-from-ico=your_icon.ico
 
 
 ### Prerequisites
 
 
-- [pyinstaller](https://pyinstaller.org/en/stable/)
+-Nuitka
+-Python 3.x
 
 
 
