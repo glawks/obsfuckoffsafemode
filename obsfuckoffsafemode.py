@@ -1,20 +1,81 @@
+import ctypes
+import sys
+import os
 import subprocess
 import threading
 import time
 import psutil
-import os
 import tkinter as tk
 from tkinter import scrolledtext
+from tkinter import messagebox
 
+# --- OBS paths and constants ---
 obs_exec = "obs64.exe"
-obs_dir = r"C:\Program Files\obs-studio\bin\64bit"
-safe_mode_file = os.path.expandvars(r"%APPDATA%\obs-studio\safe_mode")
+obs_dir = r"C:\\Program Files\\obs-studio\\bin\\64bit"
+safe_mode_file = os.path.expandvars(r"%APPDATA%\\obs-studio\\safe_mode")
 obs_process_name = "obs64.exe"
+
+
+def is_user_admin():
+    """Check if script is running with admin privileges."""
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except Exception:
+        return False
+
+
+def get_current_executable():
+    """
+    Return the path to the currently running executable or script.
+    Works for:
+      - .py run from Python
+      - Nuitka standalone build
+      - Nuitka onefile build
+    """
+    if getattr(sys, 'frozen', False):
+        return os.path.abspath(sys.executable)  # Frozen app
+    else:
+        return os.path.abspath(sys.argv[0])  # Source script
+
+
+def run_as_admin():
+    """Relaunch the current script with admin privileges."""
+    try:
+        exe_path = get_current_executable()
+        exe_dir = os.path.dirname(exe_path)
+        params = " ".join([f'"{arg}"' for arg in sys.argv[1:]])  # Keep original args
+
+        ret = ctypes.windll.shell32.ShellExecuteW(
+            None, "runas", exe_path, params, exe_dir, 1
+        )
+
+        if int(ret) <= 32:
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showerror(
+                "Elevation Failed",
+                f"Unable to restart {os.path.basename(exe_path)} with administrator rights.\n"
+                f"Error code: {ret}"
+            )
+            sys.exit(1)
+        else:
+            sys.exit(0)  # Close current process after launching elevated version
+    except Exception as e:
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror("Error", f"Unexpected error requesting admin rights:\n{e}")
+        sys.exit(1)
+
 
 class OBSWatcherApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("FuckOff Safemode")
+
+        base_title = "OBS Watchdog"
+        if is_user_admin():
+            base_title += " [Admin]"
+        self.title(base_title)
+
         self.geometry("500x400")
         self.resizable(False, False)
 
@@ -37,7 +98,7 @@ class OBSWatcherApp(tk.Tk):
 
         self.log("Launching OBS...")
         self.obs_process = self.launch_obs()
-        self.watchdog_active = True  # Flag to control watchdog loop
+        self.watchdog_active = True
 
         self.watchdog_thread = threading.Thread(target=self.watchdog, daemon=True)
         self.watchdog_thread.start()
@@ -123,10 +184,13 @@ class OBSWatcherApp(tk.Tk):
         self.after(3000, self.destroy)
 
     def on_close(self):
-        # Stop watchdog thread gracefully if still running
         self.watchdog_active = False
         self.destroy()
 
+
 if __name__ == "__main__":
+    if not is_user_admin():
+        run_as_admin()
+
     app = OBSWatcherApp()
     app.mainloop()
